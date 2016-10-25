@@ -21,12 +21,12 @@ fetch () {
   fi
 }
 checktar () {
-  if [ ! -e $1 ]; then
+  if [ ! -e "$1" ]; then
     tar -xzvf "$1".tar.gz
   fi
 }
 build () {
-  checktar
+  checktar "$1"
   cd "$1"
   shift
   "$@"
@@ -45,13 +45,13 @@ check-package-dependencies (){
 }
 check-package-dependencies
 mkdir -p downloads
-cd downloads
 blue "Setting up Directories"
 mkdir -p os161
 mkdir -p os161/toolbuild
 mkdir -p os161/tools/bin
 mkdir -p os161/downloads
 
+cd downloads
 blue "Fetching Toolchain"
 fetch "binutils" http://os161.eecs.harvard.edu/download/binutils-2.24+os161-2.1.tar.gz
 fetch "gcc" http://os161.eecs.harvard.edu/download/gcc-4.8.3+os161-2.1.tar.gz
@@ -59,16 +59,17 @@ fetch "gdb" http://os161.eecs.harvard.edu/download/gdb-7.8+os161-2.1.tar.gz
 #fetch "bmake" http://os161.eecs.harvard.edu/download/bmake-20101215.tar.gz
 #fetch "mk library" http://os161.eecs.harvard.edu/download/mk-20100612.tar.gz
 fetch "os161 2.0.2" http://os161.eecs.harvard.edu/download/os161-base-2.0.2.tar.gz
+fetch "sys161" http://os161.eecs.harvard.edu/download/sys161-2.0.8.tar.gz
 
 blue  "Building toolchain"
 # Binutils
 blue "Building Binutils"
-build binutils-2.24+os161 \
+build binutils-2.24+os161-2.1 \
   ./configure --nfp --disable-werror --target=mips-harvard-os161 --prefix=$ROOT_DIR/os161/tools
 # gcc, build directory is not in same directory. TODO: Generalize.
 blue "Building gcc"
 checktar gcc-4.8.3+os161-2.1
-mkdir buildgcc
+mkdir -p buildgcc
 cd buildgcc
 ../gcc-4.8.3+os161-2.1/configure \
   --enable-languages=c,lto \
@@ -76,10 +77,13 @@ cd buildgcc
   --disable-libmudflap --disable-libssp \
   --disable-libstdcxx --disable-nls \
   --target=mips-harvard-os161 \
-  --prefix=$HOME/os161/tools
+  --prefix=$ROOT_DIR/os161/tools
 make
 make install
 cd ..
 # gdb
 blue "Building gdb"
-build gdb-7.8+os161-2.1
+build gdb-7.8+os161-2.1 ./configure --target=mips-harvard-os161 --prefix=$ROOT_DIR/os161/tools
+# system/161 
+blue "Building gdb"
+build sys161-2.0.8 ./configure --prefix=$ROOT_DIR/os161/tools mipseb
